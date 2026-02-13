@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>加密工具箱</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#121218;color:#e8e8e8;padding:16px}
+.main{max-width:700px;margin:30px auto;background:#1b1b25;border-radius:12px;padding:20px;box-shadow:0 0 30px #0005}
+h1{text-align:center;color:#00d8ff;margin-bottom:20px;font-size:22px}
+.box{margin-bottom:12px}
+label{display:block;margin-bottom:6px;font-size:14px;color:#aaa}
+textarea,input{width:100%;background:#242430;border:none;border-radius:8px;padding:12px;color:#fff;font-size:15px;resize:none}
+input{height:44px}
+.btns{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
+button{flex:1;padding:12px;border:none;border-radius:8px;background:#00d8ff;color:#000;font-weight:600;cursor:pointer}
+button.gray{background:#444;color:#fff}
+button:hover{opacity:.9}
+#result{height:160px}
+</style>
+</head>
+<body>
+<div class="main">
+  <h1>文本 & SH 脚本 加密工具</h1>
+
+  <div class="box">
+    <label>原文（文本 / SH 脚本）</label>
+    <textarea id="src" placeholder="粘贴文本或 sh 脚本内容"></textarea>
+  </div>
+
+  <div class="box">
+    <label>加密密码</label>
+    <input id="key" type="text" placeholder="设置密码">
+  </div>
+
+  <div class="btns">
+    <button onclick="enc()">普通加密</button>
+    <button onclick="dec()">普通解密</button>
+    <button class="gray" onclick="shEnc()">SH 专用加密</button>
+    <button class="gray" onclick="shDec()">SH 专用解密</button>
+  </div>
+
+  <div class="box">
+    <label>结果（加密/解密后）</label>
+    <textarea id="result" readonly></textarea>
+  </div>
+
+  <div class="btns">
+    <button onclick="copy()">复制结果</button>
+  </div>
+</div>
+
+<script>
+// 普通加密解密
+function xor(s,k){return s.split('').map((c,i)=>
+String.fromCharCode(c.charCodeAt(0)^k.charCodeAt(i%k.length))).join('')}
+function enc(){
+  let s=document.getElementById('src').value;
+  let k=document.getElementById('key').value;
+  if(!s||!k)return alert('填完整');
+  document.getElementById('result').value=btoa(xor(s,k));
+}
+function dec(){
+  let s=document.getElementById('src').value;
+  let k=document.getElementById('key').value;
+  if(!s||!k)return alert('填完整');
+  try{document.getElementById('result').value=xor(atob(s),k)}
+  catch(e){alert('解密失败')}
+}
+
+// SH 脚本专用加密（加密后仍可运行）
+function shEnc(){
+  let s=document.getElementById('src').value;
+  let k=document.getElementById('key').value;
+  if(!s||!k)return alert('填完整');
+  let r='key='+JSON.stringify(k)+'\ndata='+JSON.stringify(btoa(xor(s,k)))+
+  '\neval "$(echo "$data" | base64 -d | xargs -0 sh -c \'dd 2>/dev/null; cat\')"';
+  document.getElementById('result').value=r;
+}
+function shDec(){
+  let s=document.getElementById('src').value;
+  let k=document.getElementById('key').value;
+  if(!s||!k)return alert('填完整');
+  let m=s.match(/data=(.+)/);
+  if(!m)return alert('不是SH加密格式');
+  try{document.getElementById('result').value=xor(atob(eval(m[1])),k)}
+  catch(e){alert('SH解密失败')}
+}
+
+// 复制
+function copy(){
+  let t=document.getElementById('result');
+  if(!t.value)return alert('无内容');
+  t.select();document.execCommand('copy');
+  alert('已复制');
+}
+</script>
+</body>
+</html>
